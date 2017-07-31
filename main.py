@@ -18,7 +18,11 @@ class Series
     def __init__(self):
         pass
         self.races = [] #[Race, ...]
-        
+		self.starting_hcaps = {}  #{Boat:hcap, ...}
+    
+	def add_starting_hcap (self, boat, hcap):
+		self.starting_hcaps[boat] = hcap
+	
     def add_race (self, race):
         self.races.append(race)
         self.races.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
@@ -87,7 +91,40 @@ g_all_boats = [
     Boat ("gp14", 11000, "George", "Frank", 1000 ), 
     ]
     
-    
+#marg 38.24
+jim 40.25
+hugh 46.24
+niamh ed 47.45
+
+marg 29.09
+jim 30.43
+niamh 34.15
+
+marg 23.26
+brian 24.36
+hugh 23.17
+des 25.22
+mike h 27.03
+sarah byrt 29.15
+
+marg 22.10
+des 23.3
+hugh 23.0
+billy 25.16
+brian 25.42
+mike h 29.15
+
+marg 30.42
+jim 31.15
+billy 33.46
+niamh ed 37.45
+
+billy 29.5
+jim 29.05
+marg 29.45
+niamh 39.3
+
+
     
 def main():
     billy = Boat ("gp14", 13228, "Billy", "Damian", 1000 ), 
