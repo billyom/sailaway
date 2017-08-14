@@ -15,8 +15,9 @@ class Boat
         self.hcap_history.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
         
 class Series
-    def __init__(self):
+    def __init__(self, name):
         pass
+        self.name = name
         self.races = [] #[Race, ...]
 		self.starting_hcaps = {}  #{Boat:hcap, ...}
     
@@ -28,9 +29,12 @@ class Series
         self.races.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
         
     def process(self):
+        hcaps = self.starting_hcaps
         for race in races:
-            race.process()
-            
+            hcaps = self.race.process(hcaps)
+            for boat, hcap in hcaps.iteritems():
+                print boat.helm, hcap
+        
 
 class Result:
     FIN_NORM = 10000
@@ -39,18 +43,32 @@ class Result:
     FIN_DNC = 10004
     FIN_RDG = 10005
     
-    def __init__(self, et=None, finish=Result.FIN_NORM):
-        self.et = et
+    def __init__(self, et_str=None, finish=Result.FIN_NORM):
         self.finish = finish
-        self.ct = None
+        self.ct_s = None
         self.place = None
         self.pts = None
         self.guest_helm = None
         self.guest_crew = None
+        self.et_s = None
+        if finish==Result.FIN_NORM:
+            self.et_s = self.parse_et(et)
         
+    def parse_et(self, et_str):
+        """
+        Convert several flavor of 'mm.ss' into seconds
+        """
+        splits = re.split("\.|,|:", et_str)
+        if len(splits) != 2: raise Exception ("Couldn't parse '%s' as an elapsed time - too many/few delimters" % et_str)
+        mm = int(splits[0])
+        ss = int(splits[1])
+        if not 0 <= ss < 60: raise Exception ("Couldn't parse '%s' as an elapsed time - seconds not in range 0-59")
+        if mm < 0: raise Exception ("Couldn't parse '%s' as an elapsed time - minutes < 0")
+        return mm*60 + ss
+    
     def __cmp__(self, lhs, rhs):
-        if lhs.ct and rhs.ct:
-            return lhs.ct - rhs.ct
+        if lhs.ct_s and rhs.ct_s:
+            return lhs.ct_s - rhs.ct_s
         else:
             return lhs.finish - rhs.finish
         
@@ -64,18 +82,18 @@ class Race
         
     def process(self, boats_to_hcaps):
         for boat, result in self.results.iteritems():
-            if result.et:
-                result.ct = result.et / (boats_to_hcaps[boat] / 1000.0)
+            if result.et_s:
+                result.ct_s = result.et_s / (boats_to_hcaps[boat] / 1000.0)
         
         norm_finish_results = [result for result in results.items() if result.finish == Results.FIN_NORM]
-        norm_finish_results.sort(lambda lhs, rhs: lhs.ct - rhs.ct)
+        norm_finish_results.sort(lambda lhs, rhs: lhs.ct_s - rhs.ct_s)
         num_relevant_finishers = round(len(norm_finish_results*2/3))
-        avg_finishing_time = sum([r.et for r in [norm_finish_results[0:num_relevant_finishers]])/num_relevant_finishers
+        avg_finishing_time = sum([r.et_s for r in [norm_finish_results[0:num_relevant_finishers]])/num_relevant_finishers
         
         boats_to_new_hcaps = boats_to_hcaps.copy()
         for boat in boats_to_hcaps.keys():
             result = self.results[boat]
-            change = (result.et/avg_finishing_time*1000 - boats_to_hcaps[boat]) / 4
+            change = (result.et_s/avg_finishing_time*1000 - boats_to_hcaps[boat]) / 4
             if change > 20:
                 change = 20
             boats_to_new_hcaps[boat] = boats_to_hcaps[boat] + change
@@ -91,7 +109,8 @@ g_all_boats = [
     Boat ("gp14", 11000, "George", "Frank", 1000 ), 
     ]
     
-#marg 38.24
+"""
+marg 38.24
 jim 40.25
 hugh 46.24
 niamh ed 47.45
@@ -123,26 +142,33 @@ billy 29.5
 jim 29.05
 marg 29.45
 niamh 39.3
-
+"""
 
     
 def main():
-    billy = Boat ("gp14", 13228, "Billy", "Damian", 1000 ), 
-    jim = Boat ("w", 9331, "Jim", "Kevin", 1000 ), 
-    marg = Boat ("w", 12000, "Margaret", "Mike", 1000 ), 
-    brian = Boat ("w", 12000, "Margaret", "Mike", 1000 ), 
-    ger = Boat ("gp14", 11000, "George", "Frank", 1000 ), 
+    billy = Boat ("gp14", 13228, "Billy", "Damian") 
+    jim = Boat ("w", 9331, "Jim", "Kevin", 1000 )
+    marg = Boat ("w", 12000, "Margaret", "Mike")
+    brian = Boat ("w", 12000, "Margaret", "Mike")
+    ger = Boat ("gp14", 11000, "George", "Frank")
+    niamh = Boat ("rs200", 611, "Niamh", "Roisín")
 
-    r1 = Race()
-    r1.add_result(billy, Result (20*60))
-    r1.add_result(jim, Result (21*60))
-    r1.add_result(brian, Result (22*60))
-    r1.add_result(ger, Result (23*60))
+    spring = Series ("Spring")
+    spring.add_starting_hcap(billy, 1000)
+    spring.add_starting_hcap(marg, 1000)
+    spring.add_starting_hcap(jim, 1000)
+    spring.add_starting_hcap(hugh, 1000)
+    spring.add_starting_hcap(niamh, 1000)
     
-    r1.process()
+    r1 = Race("Race1")
+    r1.add_result(marg, Result ("38.24"))
+    r1.add_result(jim, Result ("40.25"))
+    r1.add_result(hugh, Result ("46.24"))
+    r1.add_result(niamh, Result ("47.45"))
     
-    print r1
-        
+    spring.add_race(r1)
+    spring.process()
+    
 if __name__ == '__main__':
     main()
     
