@@ -1,7 +1,8 @@
 import time
+import re
 
-class Boat
-    def __init__ (self, class_, sailno, helm, crew, hcap):
+class Boat (object):
+    def __init__ (self, class_, sailno, helm, crew, hcap=None):
         self.class_ = class_
         self.sailno = sailno
         self.helm = helm
@@ -14,36 +15,36 @@ class Boat
         self.hcap_history.append((time_, hcap))
         self.hcap_history.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
         
-class Series
+class Series (object):
     def __init__(self, name):
         pass
         self.name = name
         self.races = [] #[Race, ...]
-		self.starting_hcaps = {}  #{Boat:hcap, ...}
+        self.starting_hcaps = {}  #{Boat:hcap, ...}
     
-	def add_starting_hcap (self, boat, hcap):
-		self.starting_hcaps[boat] = hcap
-	
+    def add_starting_hcap (self, boat, hcap):
+        self.starting_hcaps[boat] = hcap
+    
     def add_race (self, race):
         self.races.append(race)
         self.races.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
         
     def process(self):
         hcaps = self.starting_hcaps
-        for race in races:
-            hcaps = self.race.process(hcaps)
+        for race in self.races:
+            hcaps = race.process(hcaps)
             for boat, hcap in hcaps.iteritems():
                 print boat.helm, hcap
         
 
-class Result:
+class Result (object):
     FIN_NORM = 10000
     FIN_DNF = 10002
     FIN_DNS = 10003
     FIN_DNC = 10004
     FIN_RDG = 10005
     
-    def __init__(self, et_str=None, finish=Result.FIN_NORM):
+    def __init__(self, et_str=None, finish=FIN_NORM):
         self.finish = finish
         self.ct_s = None
         self.place = None
@@ -52,7 +53,7 @@ class Result:
         self.guest_crew = None
         self.et_s = None
         if finish==Result.FIN_NORM:
-            self.et_s = self.parse_et(et)
+            self.et_s = self.parse_et(et_str)
         
     def parse_et(self, et_str):
         """
@@ -72,7 +73,7 @@ class Result:
         else:
             return lhs.finish - rhs.finish
         
-class Race
+class Race (object):
     def __init__(self, series_num):
         self.results = {} #{boat -> Result)
         self.series = series_num
@@ -85,10 +86,10 @@ class Race
             if result.et_s:
                 result.ct_s = result.et_s / (boats_to_hcaps[boat] / 1000.0)
         
-        norm_finish_results = [result for result in results.items() if result.finish == Results.FIN_NORM]
+        norm_finish_results = [result for result in self.results.values() if result.finish == Result.FIN_NORM]
         norm_finish_results.sort(lambda lhs, rhs: lhs.ct_s - rhs.ct_s)
         num_relevant_finishers = round(len(norm_finish_results*2/3))
-        avg_finishing_time = sum([r.et_s for r in [norm_finish_results[0:num_relevant_finishers]])/num_relevant_finishers
+        avg_finishing_time = sum([r.et_s for r in [norm_finish_results[0:num_relevant_finishers]]])/num_relevant_finishers
         
         boats_to_new_hcaps = boats_to_hcaps.copy()
         for boat in boats_to_hcaps.keys():
@@ -147,11 +148,12 @@ niamh 39.3
     
 def main():
     billy = Boat ("gp14", 13228, "Billy", "Damian") 
-    jim = Boat ("w", 9331, "Jim", "Kevin", 1000 )
+    jim = Boat ("w", 9331, "Jim", "Kevin")
     marg = Boat ("w", 12000, "Margaret", "Mike")
     brian = Boat ("w", 12000, "Margaret", "Mike")
     ger = Boat ("gp14", 11000, "George", "Frank")
-    niamh = Boat ("rs200", 611, "Niamh", "Roisín")
+    niamh = Boat ("rs200", 611, "Niamh", "Roisin")
+    hugh = Boat ("w", 1234, "Hugh", "HughCrew")
 
     spring = Series ("Spring")
     spring.add_starting_hcap(billy, 1000)
