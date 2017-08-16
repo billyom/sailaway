@@ -15,6 +15,9 @@ class Boat (object):
         self.hcap_history.append((time_, hcap))
         self.hcap_history.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
         
+    def __str__(self):
+        return "%s %s %s %s" % (self.helm, self.crew, self.class_, self.sailno)
+        
 class Series (object):
     def __init__(self, name):
         pass
@@ -27,14 +30,13 @@ class Series (object):
     
     def add_race (self, race):
         self.races.append(race)
-        self.races.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
+        #self.races.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
         
     def process(self):
         hcaps = self.starting_hcaps
+        print self.name
         for race in self.races:
             hcaps = race.process(hcaps)
-            for boat, hcap in hcaps.iteritems():
-                print boat.helm, hcap
         
 
 class Result (object):
@@ -52,6 +54,8 @@ class Result (object):
         self.guest_helm = None
         self.guest_crew = None
         self.et_s = None
+        self.boat = None
+        self.hcap = None
         if finish==Result.FIN_NORM:
             self.et_s = self.parse_et(et_str)
         
@@ -72,36 +76,67 @@ class Result (object):
             return lhs.ct_s - rhs.ct_s
         else:
             return lhs.finish - rhs.finish
+            
+    def __str__(self):
+        if self.finish == Result.FIN_NORM:
+            str = "%s %s" % (self.ct_s, self.et_s)
+        elif (self.finish == Result.FIN_DNF):
+            str = "DNF"
+        elif (self.finish == Result.FIN_DNS):
+            str = "DNS"
+        elif (self.finish == Result.FIN_DNC):
+            str = "DNC"
+        elif (self.finish == Result.FIN_RDG):
+            str = "RDG"
+        return str
         
 class Race (object):
-    def __init__(self, series_num):
+    def __init__(self, name):
         self.results = {} #{boat -> Result)
-        self.series = series_num
+        self.name = name
         
     def add_result(self, boat, result):
         self.results[boat] = result
+        result.boat = boat
         
     def process(self, boats_to_hcaps):
         for boat, result in self.results.iteritems():
             if result.et_s:
                 result.ct_s = result.et_s / (boats_to_hcaps[boat] / 1000.0)
+                result.hcap = boats_to_hcaps[boat]
         
         norm_finish_results = [result for result in self.results.values() if result.finish == Result.FIN_NORM]
-        norm_finish_results.sort(lambda lhs, rhs: lhs.ct_s - rhs.ct_s)
-        num_relevant_finishers = round(len(norm_finish_results*2/3))
-        avg_finishing_time = sum([r.et_s for r in [norm_finish_results[0:num_relevant_finishers]]])/num_relevant_finishers
+        norm_finish_results.sort(lambda lhs, rhs: cmp(lhs.ct_s, rhs.ct_s))
+        print "\n", self.name
+        for result in norm_finish_results:
+            print result.boat, result
+        print "#norm finishers", len(norm_finish_results)
+            
+        num_relevant_finishers = int(round(float(len(norm_finish_results))*2/3))
+        avg_ct_s = sum([r.ct_s for r in norm_finish_results[0:num_relevant_finishers]])/num_relevant_finishers
+        print "avg_ct_s (%d) %0.2f" % (avg_ct_s, num_relevant_finishers)
         
         boats_to_new_hcaps = boats_to_hcaps.copy()
-        for boat in boats_to_hcaps.keys():
+        for boat in self.results.keys():
             result = self.results[boat]
-            change = (result.et_s/avg_finishing_time*1000 - boats_to_hcaps[boat]) / 4
-            if change > 20:
-                change = 20
-            boats_to_new_hcaps[boat] = boats_to_hcaps[boat] + change
+            change = round((result.et_s/avg_ct_s*1000 - boats_to_hcaps[boat]) / 4)
+            limited_change = change
+            if limited_change > 20:
+                limited_change = 20
+            boats_to_new_hcaps[boat] = boats_to_hcaps[boat] + limited_change
+            print boat, boats_to_hcaps[boat], "->", boats_to_new_hcaps[boat],
+            if change != limited_change:
+                print "(%d)" % change
+            else:
+                print 
             
         return boats_to_new_hcaps
-        
-        
+     
+    def __str__(self):
+        str = "%s" % (self.name)
+        for boat, result in self.results.iteritems():
+            str = str + "\n%s -> %s" % (boat, result)
+        return str
         
 g_all_boats = [
     Boat ("gp14", 13228, "Billy", "Damian", 1000 ), 
@@ -168,7 +203,13 @@ def main():
     r1.add_result(hugh, Result ("46.24"))
     r1.add_result(niamh, Result ("47.45"))
     
+    r2 = Race("Race2")
+    r2.add_result(marg, Result ("29.09"))
+    r2.add_result(jim, Result ("30.43"))
+    r2.add_result(niamh, Result ("34.15"))
+    
     spring.add_race(r1)
+    spring.add_race(r2)
     spring.process()
     
 if __name__ == '__main__':
