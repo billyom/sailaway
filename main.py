@@ -40,11 +40,11 @@ class Series (object):
         
 
 class Result (object):
-    FIN_NORM = 10000
-    FIN_DNF = 10002
-    FIN_DNS = 10003
-    FIN_DNC = 10004
-    FIN_RDG = 10005
+    FIN_NORM = "FIN_NORM"
+    FIN_DNF = "FIN_DNF"
+    FIN_DNS = "FIN_DNS"
+    FIN_DNC = "FIN_DNC"
+    FIN_RDG = "FIN_RDG"
     
     def __init__(self, et_str=None, finish=FIN_NORM):
         self.finish = finish
@@ -56,7 +56,13 @@ class Result (object):
         self.et_s = None
         self.boat = None
         self.hcap = None
+        
+        if finish != Result.FIN_NORM and et_str:
+            raise Exception ("Elapsed time given for %s" % finish)
+ 
         if finish==Result.FIN_NORM:
+            if not et_str:
+                raise Exception ("No elapsed time give for normal finisher")
             self.et_s = self.parse_et(et_str)
         
     def parse_et(self, et_str):
@@ -79,7 +85,7 @@ class Result (object):
             
     def __str__(self):
         if self.finish == Result.FIN_NORM:
-            str = "%s %s" % (self.ct_s, self.et_s)
+            str = "ct %ss et %ss" % (self.ct_s, self.et_s)
         elif (self.finish == Result.FIN_DNF):
             str = "DNF"
         elif (self.finish == Result.FIN_DNS):
@@ -102,24 +108,28 @@ class Race (object):
     def process(self, boats_to_hcaps):
         for boat, result in self.results.iteritems():
             if result.et_s:
-                result.ct_s = result.et_s / (boats_to_hcaps[boat] / 1000.0)
+                result.ct_s = int(round(result.et_s / (boats_to_hcaps[boat] / 1000.0)))
                 result.hcap = boats_to_hcaps[boat]
         
         norm_finish_results = [result for result in self.results.values() if result.finish == Result.FIN_NORM]
         norm_finish_results.sort(lambda lhs, rhs: cmp(lhs.ct_s, rhs.ct_s))
+        #TODO assign points for results here
+        
         print "\n", self.name
         for result in norm_finish_results:
             print result.boat, result
         print "#norm finishers", len(norm_finish_results)
             
         num_relevant_finishers = int(round(float(len(norm_finish_results))*2/3))
-        avg_ct_s = sum([r.ct_s for r in norm_finish_results[0:num_relevant_finishers]])/num_relevant_finishers
-        print "avg_ct_s (%d) %0.2f" % (avg_ct_s, num_relevant_finishers)
+        avg_ct_s = round(sum([r.ct_s for r in norm_finish_results[0:num_relevant_finishers]])/num_relevant_finishers)
+        print "avg_ct_s (%d) from top %d finishers (ct)" % (avg_ct_s, num_relevant_finishers)
         
+        print "New Hcaps:"
         boats_to_new_hcaps = boats_to_hcaps.copy()
         for boat in self.results.keys():
             result = self.results[boat]
-            change = round((result.et_s/avg_ct_s*1000 - boats_to_hcaps[boat]) / 4)
+            if result.finish != Result.FIN_NORM: continue 
+            change = int(round((result.et_s/avg_ct_s*1000 - boats_to_hcaps[boat]) / 4))
             limited_change = change
             if limited_change > 20:
                 limited_change = 20
@@ -138,12 +148,6 @@ class Race (object):
             str = str + "\n%s -> %s" % (boat, result)
         return str
         
-g_all_boats = [
-    Boat ("gp14", 13228, "Billy", "Damian", 1000 ), 
-    Boat ("w", 9331, "Jim", "Kevin", 1000 ), 
-    Boat ("w", 12000, "Margaret", "Mike", 1000 ), 
-    Boat ("gp14", 11000, "George", "Frank", 1000 ), 
-    ]
     
 """
 marg 38.24
@@ -188,7 +192,20 @@ def main():
     brian = Boat ("w", 12000, "Margaret", "Mike")
     ger = Boat ("gp14", 11000, "George", "Frank")
     niamh = Boat ("rs200", 611, "Niamh", "Roisin")
-    hugh = Boat ("w", 1234, "Hugh", "HughCrew")
+    hugh = Boat ("w", 1234, "Hugh", "Hughscrew")
+    somalley = Boat ("x", 1234, "somalley", "")
+    briand = Boat ("x", 1234, "briand", "")
+    sharrold = Boat ("x", 1234, "sharrold", "")
+    austinc = Boat ("x", 1234, "austinc", "")
+    brianp = Boat ("x", 1234, "brianp", "")
+    tommys = Boat ("x", 1234, "tommys", "")
+    caroliner = Boat ("x", 1234, "caroliner", "")
+    lparks = Boat ("x", 1234, "lparks", "")
+    chrisc = Boat ("x", 1234, "chrisc", "")
+    tommc = Boat ("x", 1234, "tommc", "")
+    coranneh = Boat ("x", 1234, "coranneh", "")
+    colmw = Boat ("x", 1234, "colmw", "")
+    margareth = Boat ("x", 1234, "margareth", "")
 
     spring = Series ("Spring")
     spring.add_starting_hcap(billy, 1000)
@@ -196,7 +213,21 @@ def main():
     spring.add_starting_hcap(jim, 1000)
     spring.add_starting_hcap(hugh, 1000)
     spring.add_starting_hcap(niamh, 1000)
+    spring.add_starting_hcap(somalley, 1235)
+    spring.add_starting_hcap(briand, 1217)
+    spring.add_starting_hcap(sharrold, 1155)
+    spring.add_starting_hcap(austinc, 1121)
+    spring.add_starting_hcap(brianp, 1140)
+    spring.add_starting_hcap(tommys, 1255)
+    spring.add_starting_hcap(caroliner, 1183)
+    spring.add_starting_hcap(lparks, 1220)
+    spring.add_starting_hcap(chrisc, 1018)
+    spring.add_starting_hcap(tommc, 1165)
+    spring.add_starting_hcap(coranneh, 1168)
+    spring.add_starting_hcap(colmw, 1105)
+    spring.add_starting_hcap(margareth, 1073)
     
+    """
     r1 = Race("Race1")
     r1.add_result(marg, Result ("38.24"))
     r1.add_result(jim, Result ("40.25"))
@@ -207,9 +238,69 @@ def main():
     r2.add_result(marg, Result ("29.09"))
     r2.add_result(jim, Result ("30.43"))
     r2.add_result(niamh, Result ("34.15"))
+    """
+    
+    r1 = Race("Race1")
+    r1.add_result (somalley, Result("36.2"))
+    r1.add_result (briand, Result("36.26"))
+    r1.add_result (sharrold, Result("34.37"))
+    r1.add_result (austinc, Result("33.46"))
+    r1.add_result (brianp, Result("35.1"))
+    r1.add_result (tommys, Result("40.43"))
+    r1.add_result (caroliner, Result("39.40"))
+    r1.add_result (lparks, Result(None, Result.FIN_DNF))
+        
+    r2 = Race("Race2")
+    r2.add_result (somalley, Result("25.0"))
+    r2.add_result (briand, Result("24.4"))
+    r2.add_result (sharrold, Result("26.7"))
+    r2.add_result (austinc, Result("23.2"))
+    r2.add_result (brianp, Result("23.3"))
+    r2.add_result (tommys, Result(None, Result.FIN_DNS))
+    r2.add_result (caroliner, Result("23.57"))
+    r2.add_result (lparks, Result(None, Result.FIN_DNF))
+
+    r3 = Race("Race3")
+    r3.add_result (chrisc, Result("34.25"))
+    r3.add_result (tommc, Result("39.58"))
+    r3.add_result (austinc, Result("39.6"))
+    r3.add_result (tommys, Result("44.12"))
+    r3.add_result (sharrold, Result("43.22"))
+    r3.add_result (coranneh, Result(None, Result.FIN_DNF))
+
+    r4 = Race("Race4")
+    r4.add_result (chrisc, Result("23.0"))
+    r4.add_result (tommc, Result("23.56"))
+    r4.add_result (austinc, Result("23.49"))
+    r4.add_result (tommys, Result("26.38"))
+    r4.add_result (coranneh, Result("25.0"))
+
+    r5 = Race("Race5")
+    r5.add_result (chrisc, Result("11.53"))
+    r5.add_result (colmw, Result("13.33"))
+    r5.add_result (tommc, Result("15.14"))
+    r5.add_result (caroliner, Result("17.46"))
+    r5.add_result (coranneh, Result("18.51"))
+    r5.add_result (margareth, Result("18.49"))
+    r5.add_result (tommys, Result("22.12"))
+    r5.add_result (lparks, Result("22.32"))
+    
+    r6 = Race("Race6")
+    r6.add_result (chrisc, Result("17.5"))
+    r6.add_result (colmw, Result("24.45"))
+    r6.add_result (tommc, Result(None, Result.FIN_DNF))
+    r6.add_result (caroliner, Result("23.15"))
+    r6.add_result (coranneh, Result("19.16"))
+    r6.add_result (margareth, Result(None, Result.FIN_DNF))
+    r6.add_result (tommys, Result("27.4"))
+    r6.add_result (lparks, Result(None, Result.FIN_DNS))
     
     spring.add_race(r1)
     spring.add_race(r2)
+    spring.add_race(r3)
+    spring.add_race(r4)
+    spring.add_race(r5)
+    spring.add_race(r6)
     spring.process()
     
 if __name__ == '__main__':
