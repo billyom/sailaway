@@ -184,49 +184,90 @@ marg 29.45
 niamh 39.3
 """
 
+g_boats  = [
+    Boat ("gp14", 13228, "Billy O'Mahony", "Damian Barnes") ,
+    Boat ("w", 9331, "Jim O'Sullivan", "Kevin Donlon"),
+    Boat ("w", 12000, "Margaret Hynes", "Mike Hayes"),
+    Boat ("w", 12000, "Brian Park", "Mike Logan"),
+    Boat ("gp14", 11000, "George FitzGerald", "Frank"),
+    Boat ("rs200", 611, "Niamh Edwards", "Roisin"),
+    Boat ("rs200", 449, "Hugh Ward", "Colm Ward"),
+    Boat ("w", 1234, "Hugh O'Malley", "Hughscrew"),
+    Boat ("x", 1234, "somalley", ""),
+    Boat ("x", 1234, "briand", ""),
+    Boat ("x", 1234, "sharrold", ""),
+    Boat ("W", 1234, "Mike Haig", "Niamh Haig"),
+    Boat ("x", 1234, "austinc", ""),
+    Boat ("x", 1234, "tommys", ""),
+    Boat ("x", 1234, "caroliner", ""),
+    Boat ("x", 1234, "lparks", ""),
+    Boat ("x", 1234, "chrisc", ""),
+    Boat ("x", 1234, "tommc", ""),
+    Boat ("x", 1234, "coranneh", ""),
+    Boat ("x", 1234, "colmw", ""),
+    Boat ("x", 1234, "margareth", ""),
+]
+
+def find_boat (str_):
+    """
+    For now find by name only
+    """
+    global g_boats
+    ret_val = None
+    for boat in g_boats:
+        if boat.helm.lower.find(str_.lower) == 0:
+            if ret_val is None:
+                ret_val = boat
+            else
+                raise Exception ("%s matches two boats! %s and %s" % (boat, ret_val))
+    return ret_val            
+        
     
 def main():
-    billy = Boat ("gp14", 13228, "Billy", "Damian") 
-    jim = Boat ("w", 9331, "Jim", "Kevin")
-    marg = Boat ("w", 12000, "Margaret", "Mike")
-    brian = Boat ("w", 12000, "Margaret", "Mike")
-    ger = Boat ("gp14", 11000, "George", "Frank")
-    niamh = Boat ("rs200", 611, "Niamh", "Roisin")
-    hugh = Boat ("w", 1234, "Hugh", "Hughscrew")
-    somalley = Boat ("x", 1234, "somalley", "")
-    briand = Boat ("x", 1234, "briand", "")
-    sharrold = Boat ("x", 1234, "sharrold", "")
-    austinc = Boat ("x", 1234, "austinc", "")
-    brianp = Boat ("x", 1234, "brianp", "")
-    tommys = Boat ("x", 1234, "tommys", "")
-    caroliner = Boat ("x", 1234, "caroliner", "")
-    lparks = Boat ("x", 1234, "lparks", "")
-    chrisc = Boat ("x", 1234, "chrisc", "")
-    tommc = Boat ("x", 1234, "tommc", "")
-    coranneh = Boat ("x", 1234, "coranneh", "")
-    colmw = Boat ("x", 1234, "colmw", "")
-    margareth = Boat ("x", 1234, "margareth", "")
 
-    spring = Series ("Spring")
-    spring.add_starting_hcap(billy, 1000)
-    spring.add_starting_hcap(marg, 1000)
-    spring.add_starting_hcap(jim, 1000)
-    spring.add_starting_hcap(hugh, 1000)
-    spring.add_starting_hcap(niamh, 1000)
-    spring.add_starting_hcap(somalley, 1235)
-    spring.add_starting_hcap(briand, 1217)
-    spring.add_starting_hcap(sharrold, 1155)
-    spring.add_starting_hcap(austinc, 1121)
-    spring.add_starting_hcap(brianp, 1140)
-    spring.add_starting_hcap(tommys, 1255)
-    spring.add_starting_hcap(caroliner, 1183)
-    spring.add_starting_hcap(lparks, 1220)
-    spring.add_starting_hcap(chrisc, 1018)
-    spring.add_starting_hcap(tommc, 1165)
-    spring.add_starting_hcap(coranneh, 1168)
-    spring.add_starting_hcap(colmw, 1105)
-    spring.add_starting_hcap(margareth, 1073)
+    series = Series ("Spring")
+    for b in g_boats:
+        series.add_starting_hcap(b, 1000)
+        
+    """
+    series.add_starting_hcap(billy, 1000)
+    series.add_starting_hcap(marg, 1000)
+    series.add_starting_hcap(jim, 1000)
+    series.add_starting_hcap(hugh, 1000)
+    series.add_starting_hcap(niamh, 1000)
+    series.add_starting_hcap(somalley, 1235)
+    series.add_starting_hcap(briand, 1217)
+    series.add_starting_hcap(sharrold, 1155)
+    series.add_starting_hcap(austinc, 1121)
+    series.add_starting_hcap(brianp, 1140)
+    series.add_starting_hcap(tommys, 1255)
+    series.add_starting_hcap(caroliner, 1183)
+    series.add_starting_hcap(lparks, 1220)
+    series.add_starting_hcap(chrisc, 1018)
+    series.add_starting_hcap(tommc, 1165)
+    series.add_starting_hcap(coranneh, 1168)
+    series.add_starting_hcap(colmw, 1105)
+    series.add_starting_hcap(margareth, 1073)
+    """
     
+    """Margaret,38.24"""
+    result_regex = re.compile("?P<helm>\w+)\s*,\s*?<et_s>[0-9\.]+")
+    race = None
+    race_no = 0
+    f = open('spring2017.csv')
+    for l in f:
+        l = l.lower()
+        if l.find('race') == 0:
+            race_no += 1
+            race = Race ("Race%d" % race_no)
+            continue
+        mo = result_regex.match(l)
+        if mo:
+            boat = find_boat(mo.group('helm'))
+            
+            
+        
+        
     """
     r1 = Race("Race1")
     r1.add_result(marg, Result ("38.24"))
@@ -239,7 +280,7 @@ def main():
     r2.add_result(jim, Result ("30.43"))
     r2.add_result(niamh, Result ("34.15"))
     """
-    
+    """
     r1 = Race("Race1")
     r1.add_result (somalley, Result("36.2"))
     r1.add_result (briand, Result("36.26"))
@@ -302,6 +343,7 @@ def main():
     spring.add_race(r5)
     spring.add_race(r6)
     spring.process()
+    """
     
 if __name__ == '__main__':
     main()
