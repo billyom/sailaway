@@ -7,14 +7,7 @@ class Boat (object):
         self.sailno = sailno
         self.helm = helm
         self.crew = crew
-        self.hcap_history = [] #[(time, hcap), ...]
-        
-        if hcap: self.set_hcap(hcap, time.time())
-        
-    def set_hcap (self, hcap, time_):
-        self.hcap_history.append((time_, hcap))
-        self.hcap_history.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
-        
+                
     def __str__(self):
         return "%s %s %s %s" % (self.helm, self.crew, self.class_, self.sailno)
         
@@ -24,9 +17,11 @@ class Series (object):
         self.name = name
         self.races = [] #[Race, ...]
         self.starting_hcaps = {}  #{Boat:hcap, ...}
+        self.points = {}  #{Boat:points, ...}
     
     def add_starting_hcap (self, boat, hcap):
         self.starting_hcaps[boat] = hcap
+        self.points[boat] = 0
     
     def add_race (self, race):
         self.races.append(race)
@@ -37,33 +32,66 @@ class Series (object):
         print self.name
         for race in self.races:
             hcaps = race.process(hcaps)
+            for boat, result in race.results.iteritems():
+                if result.points: self.points[boat] += result.points
+        
+        #Points for RDG
+        #foreach boat in series
+        print "RDG calc"
+        for boat in self.starting_hcaps:
+            print boat
+            #calc average points excluding DNCs
+            num_non_dncs = 0
+            non_dnc_pts = 0
+            for race in self.races:
+                result = race.results.get(boat, None)
+                print result
+                if result and result.finish not in [Result.FIN_DNC, Result.FIN_RDG]:
+                    non_dnc_pts += result.points
+                    num_non_dncs += 1
+            avg_non_dnc_pts = None
+            if num_non_dncs:
+                avg_non_dnc_pts = float(non_dnc_pts)/num_non_dncs
+            print "avg_non_dnc_pts", avg_non_dnc_pts
+            for race in self.races:
+                result = race.results.get(boat, None)
+                if result and result.finish == Result.FIN_RDG and avg_non_dnc_pts:
+                    result.points = avg_non_dnc_pts
+                    
+        for race in self.races:
+            race.print_()
+            
         
 
 class Result (object):
-    FIN_NORM = "FIN_NORM"
-    FIN_DNF = "FIN_DNF"
-    FIN_DNS = "FIN_DNS"
-    FIN_DNC = "FIN_DNC"
-    FIN_RDG = "FIN_RDG"
+    FIN_NORM = ""
+    FIN_DNF = "dnf"
+    FIN_DNS = "dns"
+    FIN_DNC = "dnc"
+    FIN_RDG = "rdg"
+
+    FIN_ORDER = [FIN_NORM, FIN_DNF, FIN_DNS, FIN_RDG, FIN_DNC]
     
-    def __init__(self, et_str=None, finish=FIN_NORM):
-        self.finish = finish
+    def __init__(self, result_str=None):
+        """
+        result_str: ET in 'mm.ss' format or dnf,rdg, etc
+        """
+        
+        self.finish = Result.FIN_NORM
         self.ct_s = None
-        self.place = None
-        self.pts = None
+        self.points = None
         self.guest_helm = None
         self.guest_crew = None
         self.et_s = None
         self.boat = None
         self.hcap = None
         
-        if finish != Result.FIN_NORM and et_str:
-            raise Exception ("Elapsed time given for %s" % finish)
- 
-        if finish==Result.FIN_NORM:
-            if not et_str:
-                raise Exception ("No elapsed time give for normal finisher")
-            self.et_s = self.parse_et(et_str)
+        result_str = result_str.lower()
+        if result_str in Result.FIN_ORDER:
+            self.finish = result_str
+        else:
+            self.et_s = self.parse_et(result_str)
+            
         
     def parse_et(self, et_str):
         """
@@ -77,15 +105,15 @@ class Result (object):
         if mm < 0: raise Exception ("Couldn't parse '%s' as an elapsed time - minutes < 0")
         return mm*60 + ss
     
-    def __cmp__(self, lhs, rhs):
-        if lhs.ct_s and rhs.ct_s:
-            return lhs.ct_s - rhs.ct_s
+    def __cmp__(self, rhs):
+        if self.ct_s and rhs.ct_s:
+            return self.points - rhs.points
         else:
-            return lhs.finish - rhs.finish
+            return Result.FIN_ORDER.index(self.finish) - Result.FIN_ORDER.index(rhs.finish)
             
     def __str__(self):
         if self.finish == Result.FIN_NORM:
-            str = "ct %ss et %ss" % (self.ct_s, self.et_s)
+            str = "%ss @%d %ss" % (self.ct_s, self.hcap, self.et_s)
         elif (self.finish == Result.FIN_DNF):
             str = "DNF"
         elif (self.finish == Result.FIN_DNS):
@@ -94,7 +122,14 @@ class Result (object):
             str = "DNC"
         elif (self.finish == Result.FIN_RDG):
             str = "RDG"
+        
+        if self.points:
+            str += " %.1f" % self.points
+        else:
+            str += " -"
+        
         return str
+        
         
 class Race (object):
     def __init__(self, name):
@@ -106,20 +141,42 @@ class Race (object):
         result.boat = boat
         
     def process(self, boats_to_hcaps):
+        #calc corrected times
         for boat, result in self.results.iteritems():
             if result.et_s:
-                result.ct_s = int(round(result.et_s / (boats_to_hcaps[boat] / 1000.0)))
                 result.hcap = boats_to_hcaps[boat]
+                result.ct_s = int(round(result.et_s / (result.hcap / 1000.0)))
         
         norm_finish_results = [result for result in self.results.values() if result.finish == Result.FIN_NORM]
         norm_finish_results.sort(lambda lhs, rhs: cmp(lhs.ct_s, rhs.ct_s))
-        #TODO assign points for results here
         
-        print "\n", self.name
-        for result in norm_finish_results:
-            print result.boat, result
-        print "#norm finishers", len(norm_finish_results)
+        #assign points for results
+        #TODO handle results with tied CTs
+        for n, result in enumerate(norm_finish_results):
+            result.points = float(n + 1)
+        
+        for result in self.results.values():
+            if result.finish == Result.FIN_DNF:
+                result.points = len(norm_finish_results) + 1
+            elif result.finish == Result.FIN_DNS:
+                result.points = len(norm_finish_results) + 2
+                
+        #Assign DNC points
+        boats_in_series = set(boats_to_hcaps.keys())
+        boats_in_race = set(self.results.keys())
+        boats_dnc_in_race = boats_in_series - boats_in_race
+
+        for boat in boats_dnc_in_race:
+            self.results[boat] = Result(Result.FIN_DNC)
+            self.results[boat].boat = boat  # TODO boat should be param to Result ctor
+            self.results[boat].points = len(norm_finish_results)+3
+        
+        #points for RDG are handled in Series.process() after all races are processed
+        
+        self.print_()
+        
             
+        #Calculate new hcaps
         num_relevant_finishers = int(round(float(len(norm_finish_results))*2/3))
         avg_ct_s = round(sum([r.ct_s for r in norm_finish_results[0:num_relevant_finishers]])/num_relevant_finishers)
         print "avg_ct_s (%d) from top %d finishers (ct)" % (avg_ct_s, num_relevant_finishers)
@@ -148,6 +205,15 @@ class Race (object):
             str = str + "\n%s -> %s" % (boat, result)
         return str
         
+    def print_(self):
+        #TODO prob can merge with __str__
+        #print race results for everyone except non-competitors
+        results_list = self.results.values()
+        results_list.sort(lambda lhs, rhs: cmp(lhs, rhs))
+        print "\n", self.name
+        for result in results_list:
+            if result.finish == Result.FIN_DNC: break
+            print result.boat, result
     
 """
 marg 38.24
@@ -205,21 +271,20 @@ g_boats  = [
     Boat ("x", 1234, "tommc", ""),
     Boat ("x", 1234, "coranneh", ""),
     Boat ("x", 1234, "colmw", ""),
-    Boat ("x", 1234, "margareth", ""),
 ]
 
-def find_boat (str_):
+def find_boat (helm):
     """
     For now find by name only
     """
     global g_boats
     ret_val = None
     for boat in g_boats:
-        if boat.helm.lower.find(str_.lower) == 0:
+        if boat.helm.lower().find(helm.lower()) == 0:
             if ret_val is None:
                 ret_val = boat
-            else
-                raise Exception ("%s matches two boats! %s and %s" % (boat, ret_val))
+            else:
+                raise Exception ("%s matches two boats! %s and %s" % (helm, boat, ret_val))
     return ret_val            
         
     
@@ -251,19 +316,29 @@ def main():
     """
     
     """Margaret,38.24"""
-    result_regex = re.compile("?P<helm>\w+)\s*,\s*?<et_s>[0-9\.]+")
+    result_regex = re.compile("(?P<helm>[\w ]+)\s*,\s*(?P<result>[\w0-9\.]+)")
     race = None
     race_no = 0
     f = open('spring2017.csv')
     for l in f:
         l = l.lower()
         if l.find('race') == 0:
+            if race: series.add_race(race)
             race_no += 1
             race = Race ("Race%d" % race_no)
             continue
         mo = result_regex.match(l)
         if mo:
             boat = find_boat(mo.group('helm'))
+            race.add_result(boat, Result(mo.group('result')))
+        elif l.strip():
+            print "WARNING: can't parse result '%s'" % l
+    
+    if race: series.add_race(race)
+    
+    series.process()
+            
+            
             
             
         
