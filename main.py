@@ -1,12 +1,19 @@
 import time
 import re
 
+"""
+TODO
+- When boat has only RDGs and DNCs the RDGs end up as None and count as 0 towards Series total. Should be given a DNS for the RDG races in this case.
+- 
+"""
+
 class Boat (object):
     def __init__ (self, class_, sailno, helm, crew, hcap=None):
         self.class_ = class_
         self.sailno = sailno
         self.helm = helm
         self.crew = crew
+        self.hcap = hcap
                 
     def __str__(self):
         return "%s %s %s %s" % (self.helm, self.crew, self.class_, self.sailno)
@@ -61,7 +68,19 @@ class Series (object):
         for race in self.races:
             race.print_()
             
+    def print_standings (self):
+        boats_n_points = [(boat, points) for boat, points in self.points.iteritems()]
+        boats_n_points.sort(cmp=None, key=lambda tuple: tuple[1])
         
+        for race in self.races:
+            print "\t",  race.name,
+        print "\t", "Total"
+        
+        for boat, points in boats_n_points:
+            print boat.helm,
+            for race in self.races:
+                print "\t", race.results[boat].points,
+            print self.points[boat]
 
 class Result (object):
     FIN_NORM = ""
@@ -215,63 +234,7 @@ class Race (object):
             if result.finish == Result.FIN_DNC: break
             print result.boat, result
     
-"""
-marg 38.24
-jim 40.25
-hugh 46.24
-niamh ed 47.45
 
-marg 29.09
-jim 30.43
-niamh 34.15
-
-marg 23.26
-brian 24.36
-hugh 23.17
-des 25.22
-mike h 27.03
-sarah byrt 29.15
-
-marg 22.10
-des 23.3
-hugh 23.0
-billy 25.16
-brian 25.42
-mike h 29.15
-
-marg 30.42
-jim 31.15
-billy 33.46
-niamh ed 37.45
-
-billy 29.5
-jim 29.05
-marg 29.45
-niamh 39.3
-"""
-
-g_boats  = [
-    Boat ("gp14", 13228, "Billy O'Mahony", "Damian Barnes") ,
-    Boat ("w", 9331, "Jim O'Sullivan", "Kevin Donlon"),
-    Boat ("w", 12000, "Margaret Hynes", "Mike Hayes"),
-    Boat ("w", 12000, "Brian Park", "Mike Logan"),
-    Boat ("gp14", 11000, "George FitzGerald", "Frank"),
-    Boat ("rs200", 611, "Niamh Edwards", "Roisin"),
-    Boat ("rs200", 449, "Hugh Ward", "Colm Ward"),
-    Boat ("w", 1234, "Hugh O'Malley", "Hughscrew"),
-    Boat ("x", 1234, "somalley", ""),
-    Boat ("x", 1234, "briand", ""),
-    Boat ("x", 1234, "sharrold", ""),
-    Boat ("W", 1234, "Mike Haig", "Niamh Haig"),
-    Boat ("x", 1234, "austinc", ""),
-    Boat ("x", 1234, "tommys", ""),
-    Boat ("x", 1234, "caroliner", ""),
-    Boat ("x", 1234, "lparks", ""),
-    Boat ("x", 1234, "chrisc", ""),
-    Boat ("x", 1234, "tommc", ""),
-    Boat ("x", 1234, "coranneh", ""),
-    Boat ("x", 1234, "colmw", ""),
-]
 
 def find_boat (helm):
     """
@@ -287,33 +250,31 @@ def find_boat (helm):
                 raise Exception ("%s matches two boats! %s and %s" % (helm, boat, ret_val))
     return ret_val            
         
+g_boats  = [
+    Boat ("gp14", 13228, "Billy O'Mahony", "Damian Barnes") ,
+    Boat ("w", 9331, "Jim O'Sullivan", "Kevin Donlon"),
+    Boat ("w", 12000, "Margaret Hynes", "Mike Hayes"),
+    Boat ("w", 12000, "Brian Park", "Mike Logan"),
+    Boat ("gp14", 11000, "George FitzGerald", "Frank"),
+    Boat ("rs200", 611, "Niamh Edwards", "Roisin"),
+    Boat ("rs200", 449, "Hugh Ward", "Colm Ward"),
+    Boat ("w", 1234, "Hugh O'Malley", "Hughscrew"),
+    Boat ("x", 1234, "Sheila O'Malley", ""),
+    Boat ("W", 1234, "Mike Haig", "Niamh Haig"),
+    Boat ("x", 1234, "Tommy Scott", ""),
+    Boat ("x", 1234, "Chris Caher", ""),
+    Boat ("x", 1234, "Coranne Heffernan", ""),
+    Boat ("x", 1234, "Colm Ward", ""),
+    Boat ("x", 1234, "Tom McHugh", ""),
+    Boat ("x", 1234, "Des McMahon", ""),
+    Boat ("x", 1234, "Sarah Byrt", ""),
+]
     
 def main():
 
     series = Series ("Spring")
     for b in g_boats:
         series.add_starting_hcap(b, 1000)
-        
-    """
-    series.add_starting_hcap(billy, 1000)
-    series.add_starting_hcap(marg, 1000)
-    series.add_starting_hcap(jim, 1000)
-    series.add_starting_hcap(hugh, 1000)
-    series.add_starting_hcap(niamh, 1000)
-    series.add_starting_hcap(somalley, 1235)
-    series.add_starting_hcap(briand, 1217)
-    series.add_starting_hcap(sharrold, 1155)
-    series.add_starting_hcap(austinc, 1121)
-    series.add_starting_hcap(brianp, 1140)
-    series.add_starting_hcap(tommys, 1255)
-    series.add_starting_hcap(caroliner, 1183)
-    series.add_starting_hcap(lparks, 1220)
-    series.add_starting_hcap(chrisc, 1018)
-    series.add_starting_hcap(tommc, 1165)
-    series.add_starting_hcap(coranneh, 1168)
-    series.add_starting_hcap(colmw, 1105)
-    series.add_starting_hcap(margareth, 1073)
-    """
     
     """Margaret,38.24"""
     result_regex = re.compile("(?P<helm>[\w ]+)\s*,\s*(?P<result>[\w0-9\.]+)")
@@ -329,7 +290,10 @@ def main():
             continue
         mo = result_regex.match(l)
         if mo:
-            boat = find_boat(mo.group('helm'))
+            helm_name = mo.group('helm')
+            boat = find_boat(helm_name)
+            if not boat:
+                raise Exception ("Not boat for %s" % helm_name)
             race.add_result(boat, Result(mo.group('result')))
         elif l.strip():
             print "WARNING: can't parse result '%s'" % l
@@ -337,88 +301,10 @@ def main():
     if race: series.add_race(race)
     
     series.process()
-            
-            
-            
-            
+    series.print_standings()
+    
         
         
-    """
-    r1 = Race("Race1")
-    r1.add_result(marg, Result ("38.24"))
-    r1.add_result(jim, Result ("40.25"))
-    r1.add_result(hugh, Result ("46.24"))
-    r1.add_result(niamh, Result ("47.45"))
-    
-    r2 = Race("Race2")
-    r2.add_result(marg, Result ("29.09"))
-    r2.add_result(jim, Result ("30.43"))
-    r2.add_result(niamh, Result ("34.15"))
-    """
-    """
-    r1 = Race("Race1")
-    r1.add_result (somalley, Result("36.2"))
-    r1.add_result (briand, Result("36.26"))
-    r1.add_result (sharrold, Result("34.37"))
-    r1.add_result (austinc, Result("33.46"))
-    r1.add_result (brianp, Result("35.1"))
-    r1.add_result (tommys, Result("40.43"))
-    r1.add_result (caroliner, Result("39.40"))
-    r1.add_result (lparks, Result(None, Result.FIN_DNF))
-        
-    r2 = Race("Race2")
-    r2.add_result (somalley, Result("25.0"))
-    r2.add_result (briand, Result("24.4"))
-    r2.add_result (sharrold, Result("26.7"))
-    r2.add_result (austinc, Result("23.2"))
-    r2.add_result (brianp, Result("23.3"))
-    r2.add_result (tommys, Result(None, Result.FIN_DNS))
-    r2.add_result (caroliner, Result("23.57"))
-    r2.add_result (lparks, Result(None, Result.FIN_DNF))
-
-    r3 = Race("Race3")
-    r3.add_result (chrisc, Result("34.25"))
-    r3.add_result (tommc, Result("39.58"))
-    r3.add_result (austinc, Result("39.6"))
-    r3.add_result (tommys, Result("44.12"))
-    r3.add_result (sharrold, Result("43.22"))
-    r3.add_result (coranneh, Result(None, Result.FIN_DNF))
-
-    r4 = Race("Race4")
-    r4.add_result (chrisc, Result("23.0"))
-    r4.add_result (tommc, Result("23.56"))
-    r4.add_result (austinc, Result("23.49"))
-    r4.add_result (tommys, Result("26.38"))
-    r4.add_result (coranneh, Result("25.0"))
-
-    r5 = Race("Race5")
-    r5.add_result (chrisc, Result("11.53"))
-    r5.add_result (colmw, Result("13.33"))
-    r5.add_result (tommc, Result("15.14"))
-    r5.add_result (caroliner, Result("17.46"))
-    r5.add_result (coranneh, Result("18.51"))
-    r5.add_result (margareth, Result("18.49"))
-    r5.add_result (tommys, Result("22.12"))
-    r5.add_result (lparks, Result("22.32"))
-    
-    r6 = Race("Race6")
-    r6.add_result (chrisc, Result("17.5"))
-    r6.add_result (colmw, Result("24.45"))
-    r6.add_result (tommc, Result(None, Result.FIN_DNF))
-    r6.add_result (caroliner, Result("23.15"))
-    r6.add_result (coranneh, Result("19.16"))
-    r6.add_result (margareth, Result(None, Result.FIN_DNF))
-    r6.add_result (tommys, Result("27.4"))
-    r6.add_result (lparks, Result(None, Result.FIN_DNS))
-    
-    spring.add_race(r1)
-    spring.add_race(r2)
-    spring.add_race(r3)
-    spring.add_race(r4)
-    spring.add_race(r5)
-    spring.add_race(r6)
-    spring.process()
-    """
     
 if __name__ == '__main__':
     main()
