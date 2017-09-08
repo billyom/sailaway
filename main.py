@@ -14,9 +14,29 @@ class Boat (object):
         self.helm = helm
         self.crew = crew
         self.hcap = hcap
-                
-    def __str__(self):
+    
+    def __repr__ (self):
+        return "\nBoat (%(class_)s, %(sailno)s, %(helm)s, %(crew)s, %(hcap)s)" % self.__dict__
+        
+    def __str__ (self):
         return "%s %s %s %s" % (self.helm, self.crew, self.class_, self.sailno)
+
+def rebalance_hcaps (boats):
+    sum_of_hcaps = sum (boat.hcap for boat in boats)
+    num_hcaps = len(boats)
+    average = float(sum_of_hcaps)/num_hcaps
+    print "average:", average
+
+    scaling_factor = num_hcaps*1000.0/sum_of_hcaps
+    
+    for b in boats:
+        b.hcap = int(b.hcap*scaling_factor)
+    
+    sum_of_hcaps = sum (boat.hcap for boat in boats)
+    average = float(sum_of_hcaps)/num_hcaps
+    print "average:", average
+    
+    
         
 class Series (object):
     def __init__(self, name):
@@ -26,13 +46,14 @@ class Series (object):
         self.starting_hcaps = {}  #{Boat:hcap, ...}
         self.points = {}  #{Boat:points, ...}
     
-    def add_starting_hcap (self, boat, hcap):
-        self.starting_hcaps[boat] = hcap
-        self.points[boat] = 0
+    def add_boats (self, boats):
+        self.boats = boats[:]
+        for boat in self.boats:
+            self.starting_hcaps[boat] = boat.hcap
+            self.points[boat] = 0
     
     def add_race (self, race):
         self.races.append(race)
-        #self.races.sort(lambda lhs, rhs: lhs.time_ - rhs.time_)
         
     def process(self):
         hcaps = self.starting_hcaps
@@ -44,9 +65,7 @@ class Series (object):
         
         #Points for RDG
         #foreach boat in series
-        print "RDG calc"
         for boat in self.starting_hcaps:
-            print boat
             #calc average points excluding DNCs
             num_non_dncs = 0
             non_dnc_pts = 0
@@ -67,6 +86,11 @@ class Series (object):
                     
         for race in self.races:
             race.print_()
+            
+        for boat in self.boats:
+            boat.hcap = hcaps[boat]
+            
+        return self.boats
             
     def print_standings (self):
         boats_n_points = [(boat, points) for boat, points in self.points.iteritems()]
@@ -274,7 +298,11 @@ def main():
 
     series = Series ("Spring")
     for b in g_boats:
-        series.add_starting_hcap(b, 1000)
+        b.hcap = 1000
+        
+    print repr(g_boats)
+        
+    series.add_boats(g_boats)
     
     """Margaret,38.24"""
     result_regex = re.compile("(?P<helm>[\w ]+)\s*,\s*(?P<result>[\w0-9\.]+)")
@@ -300,9 +328,11 @@ def main():
     
     if race: series.add_race(race)
     
-    series.process()
+    boats = series.process()
     series.print_standings()
-    
+    print repr (boats)
+    rebalance_hcaps(boats)
+    print repr (boats)
         
         
     
