@@ -1,5 +1,6 @@
 import time
 import re
+import argparse
 
 """
 TODO
@@ -21,16 +22,19 @@ class Boat (object):
     def __str__ (self):
         return "%s %s %s %s" % (self.helm, self.crew, self.class_, self.sailno)
 
-def rebalance_hcaps (boats):
-    sum_of_hcaps = sum (boat.hcap for boat in boats)
-    num_hcaps = len(boats)
+def rebalance_hcaps (hcaps):
+    """
+    hcaps:{boat:hcap, ...}
+    """
+    sum_of_hcaps = sum (hcaps.values())
+    num_hcaps = len(hcaps)
     average = float(sum_of_hcaps)/num_hcaps
     print "average:", average
 
     scaling_factor = num_hcaps*1000.0/sum_of_hcaps
     
-    for b in boats:
-        b.hcap = int(b.hcap*scaling_factor)
+    for boat in hcap.keys():
+        boat.hcap = hcaps[boat] = int(boat.hcap*scaling_factor)
     
     sum_of_hcaps = sum (boat.hcap for boat in boats)
     average = float(sum_of_hcaps)/num_hcaps
@@ -45,23 +49,39 @@ class Series (object):
         self.races = [] #[Race, ...]
         self.starting_hcaps = {}  #{Boat:hcap, ...}
         self.points = {}  #{Boat:points, ...}
+        self.boats = []
     
     def add_boats (self, boats):
         self.boats = boats[:]
         for boat in self.boats:
-            self.starting_hcaps[boat] = boat.hcap
             self.points[boat] = 0
+    
+    def find_boat (self, helm):
+        """
+        For now find by name only
+        """
+        ret_val = None
+        for boat in self.boats:
+            if boat.helm.lower().find(helm.lower()) == 0:
+                if ret_val is None:
+                    ret_val = boat
+                else:
+                    raise Exception ("%s matches two boats! %s and %s" % (helm, boat, ret_val))
+        return ret_val
     
     def add_race (self, race):
         self.races.append(race)
         
     def process(self):
-        hcaps = self.starting_hcaps
         print self.name
+        hcaps = {boat:boat.hcap for boat in self.boats}
         for race in self.races:
             hcaps = race.process(hcaps)
             for boat, result in race.results.iteritems():
                 if result.points: self.points[boat] += result.points
+            rebalance_hcaps(hcaps)
+        
+        self.boats = hcaps.keys()
         
         #Points for RDG
         #foreach boat in series
@@ -218,7 +238,6 @@ class Race (object):
         
         self.print_()
         
-            
         #Calculate new hcaps
         num_relevant_finishers = int(round(float(len(norm_finish_results))*2/3))
         avg_ct_s = round(sum([r.ct_s for r in norm_finish_results[0:num_relevant_finishers]])/num_relevant_finishers)
@@ -258,57 +277,31 @@ class Race (object):
             if result.finish == Result.FIN_DNC: break
             print result.boat, result
     
-
-
-def find_boat (helm):
-    """
-    For now find by name only
-    """
-    global g_boats
-    ret_val = None
-    for boat in g_boats:
-        if boat.helm.lower().find(helm.lower()) == 0:
-            if ret_val is None:
-                ret_val = boat
-            else:
-                raise Exception ("%s matches two boats! %s and %s" % (helm, boat, ret_val))
-    return ret_val            
-        
-g_boats  = [
-    Boat ("gp14", 13228, "Billy O'Mahony", "Damian Barnes") ,
-    Boat ("w", 9331, "Jim O'Sullivan", "Kevin Donlon"),
-    Boat ("w", 12000, "Margaret Hynes", "Mike Hayes"),
-    Boat ("w", 12000, "Brian Park", "Mike Logan"),
-    Boat ("gp14", 11000, "George FitzGerald", "Frank"),
-    Boat ("rs200", 611, "Niamh Edwards", "Roisin"),
-    Boat ("rs200", 449, "Hugh Ward", "Colm Ward"),
-    Boat ("w", 1234, "Hugh O'Malley", "Hughscrew"),
-    Boat ("x", 1234, "Sheila O'Malley", ""),
-    Boat ("W", 1234, "Mike Haig", "Niamh Haig"),
-    Boat ("x", 1234, "Tommy Scott", ""),
-    Boat ("x", 1234, "Chris Caher", ""),
-    Boat ("x", 1234, "Coranne Heffernan", ""),
-    Boat ("x", 1234, "Colm Ward", ""),
-    Boat ("x", 1234, "Tom McHugh", ""),
-    Boat ("x", 1234, "Des McMahon", ""),
-    Boat ("x", 1234, "Sarah Byrt", ""),
-]
     
 def main():
+    parser = argparse.ArgumentParser(description='Simulate OVS EMC')
+    parser.add_argument('--series', '-s', dest='series_file',
+                       help='Results csv for a series')
+    parser.add_argument('--iboats', '-i', dest='boats_in_file',
+                       help='Starting boats db')
+    parser.add_argument('--oboats', '-o', dest='boats_out_file',
+                       help='Boats db after series')
+    parser.add_argument('--results', '-r', dest='verbose',  type=bool,
+                       help='Results file')
 
-    series = Series ("Spring")
-    for b in g_boats:
-        b.hcap = 1000
+    args = parser.parse_args()
+
+    boats_txt = file(args.boats_in_file).read()
+    iboats = eval(boats_txt)
         
-    print repr(g_boats)
-        
-    series.add_boats(g_boats)
+    series = Series (args.series_file.split('.')[0])
+    series.add_boats(iboats)
     
-    """Margaret,38.24"""
+    # Margaret,38.24
     result_regex = re.compile("(?P<helm>[\w ]+)\s*,\s*(?P<result>[\w0-9\.]+)")
     race = None
     race_no = 0
-    f = open('spring2017.csv')
+    f = open(args.series_file)
     for l in f:
         l = l.lower()
         if l.find('race') == 0:
@@ -319,23 +312,23 @@ def main():
         mo = result_regex.match(l)
         if mo:
             helm_name = mo.group('helm')
-            boat = find_boat(helm_name)
+            boat = series.find_boat(helm_name)
             if not boat:
                 raise Exception ("Not boat for %s" % helm_name)
             race.add_result(boat, Result(mo.group('result')))
         elif l.strip():
             print "WARNING: can't parse result '%s'" % l
-    
     if race: series.add_race(race)
     
     boats = series.process()
     series.print_standings()
-    print repr (boats)
     rebalance_hcaps(boats)
-    print repr (boats)
-        
-        
     
+    f = file(args.boats_out_file, 'w')
+    f.write(repr(series.boats))
+    f.close()
+    
+
 if __name__ == '__main__':
     main()
     
