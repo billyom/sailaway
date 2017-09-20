@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 import re
 import argparse
@@ -17,7 +19,7 @@ class Boat (object):
         self.hcap = hcap
     
     def __repr__ (self):
-        return "\nBoat (%(class_)s, %(sailno)s, %(helm)s, %(crew)s, %(hcap)s)" % self.__dict__
+        return "\nBoat \"(%(class_)s\", %(sailno)s, \"%(helm)s\", \"%(crew)s\", %(hcap)s)" % self.__dict__
         
     def __str__ (self):
         return "%s %s %s %s" % (self.helm, self.crew, self.class_, self.sailno)
@@ -32,11 +34,14 @@ def rebalance_hcaps (hcaps):
     print "average:", average
 
     scaling_factor = num_hcaps*1000.0/sum_of_hcaps
+    print "scaling_factor", scaling_factor
     
-    for boat in hcap.keys():
+    for boat in hcaps.keys():
+        print boat.hcap, "->"
         boat.hcap = hcaps[boat] = int(boat.hcap*scaling_factor)
-    
-    sum_of_hcaps = sum (boat.hcap for boat in boats)
+        print boat.hcap
+        
+    sum_of_hcaps = sum (hcaps.values())
     average = float(sum_of_hcaps)/num_hcaps
     print "average:", average
     
@@ -258,6 +263,10 @@ class Race (object):
                 print "(%d)" % change
             else:
                 print 
+        
+        # change boat.hcap field also
+        for boat, hcap in boats_to_new_hcaps.iteritems():
+            boat.hcap = hcap
             
         return boats_to_new_hcaps
      
@@ -286,7 +295,7 @@ def main():
                        help='Starting boats db')
     parser.add_argument('--oboats', '-o', dest='boats_out_file',
                        help='Boats db after series')
-    parser.add_argument('--results', '-r', dest='verbose',  type=bool,
+    parser.add_argument('--results', '-r', dest='results_file',  type=bool,
                        help='Results file')
 
     args = parser.parse_args()
@@ -322,7 +331,6 @@ def main():
     
     boats = series.process()
     series.print_standings()
-    rebalance_hcaps(boats)
     
     f = file(args.boats_out_file, 'w')
     f.write(repr(series.boats))
