@@ -3,6 +3,7 @@
 import time
 import re
 import argparse
+import sys
 
 """
 TODO
@@ -19,7 +20,7 @@ class Boat (object):
         self.hcap = hcap
     
     def __repr__ (self):
-        return "\nBoat \"(%(class_)s\", %(sailno)s, \"%(helm)s\", \"%(crew)s\", %(hcap)s)" % self.__dict__
+        return "\nBoat (\"%(class_)s\", %(sailno)s, \"%(helm)s\", \"%(crew)s\", %(hcap)s)" % self.__dict__
         
     def __str__ (self):
         return "%s %s %s %s" % (self.helm, self.crew, self.class_, self.sailno)
@@ -32,7 +33,8 @@ def rebalance_hcaps (hcaps):
     num_hcaps = len(hcaps)
     average = float(sum_of_hcaps)/num_hcaps
     print "average:", average
-
+    
+    """
     scaling_factor = num_hcaps*1000.0/sum_of_hcaps
     print "scaling_factor", scaling_factor
     
@@ -40,7 +42,8 @@ def rebalance_hcaps (hcaps):
         print boat.hcap, "->"
         boat.hcap = hcaps[boat] = int(boat.hcap*scaling_factor)
         print boat.hcap
-        
+    """
+    
     sum_of_hcaps = sum (hcaps.values())
     average = float(sum_of_hcaps)/num_hcaps
     print "average:", average
@@ -86,11 +89,11 @@ class Series (object):
                 if result.points: self.points[boat] += result.points
             rebalance_hcaps(hcaps)
         
-        self.boats = hcaps.keys()
+        #self.boats = hcaps.keys()
         
         #Points for RDG
         #foreach boat in series
-        for boat in self.starting_hcaps:
+        for boat in self.boats:
             #calc average points excluding DNCs
             num_non_dncs = 0
             non_dnc_pts = 0
@@ -117,19 +120,19 @@ class Series (object):
             
         return self.boats
             
-    def print_standings (self):
+    def print_standings (self, file_=sys.stdout, sep="\t"):
         boats_n_points = [(boat, points) for boat, points in self.points.iteritems()]
         boats_n_points.sort(cmp=None, key=lambda tuple: tuple[1])
         
         for race in self.races:
-            print "\t",  race.name,
-        print "\t", "Total"
+            print >> file_, sep, race.name,
+        print >> file_, sep, "Total"
         
         for boat, points in boats_n_points:
-            print boat.helm,
+            print >> file_, boat.helm,
             for race in self.races:
-                print "\t", race.results[boat].points,
-            print self.points[boat]
+                print >> file_, sep, race.results[boat].points,
+            print >> file_, self.points[boat]
 
 class Result (object):
     FIN_NORM = ""
@@ -307,7 +310,7 @@ def main():
     series.add_boats(iboats)
     
     # Margaret,38.24
-    result_regex = re.compile("(?P<helm>[\w ]+)\s*,\s*(?P<result>[\w0-9\.]+)")
+    result_regex = re.compile("(?P<helm>[\w ']+)\s*,\s*(?P<result>[\w0-9\.]+)")
     race = None
     race_no = 0
     f = open(args.series_file)
@@ -323,14 +326,19 @@ def main():
             helm_name = mo.group('helm')
             boat = series.find_boat(helm_name)
             if not boat:
-                raise Exception ("Not boat for %s" % helm_name)
+                raise Exception ("No boat for %s" % helm_name)
             race.add_result(boat, Result(mo.group('result')))
         elif l.strip():
-            print "WARNING: can't parse result '%s'" % l
+            print "WARNING: can't parse result '%s'" % l.strip()
     if race: series.add_race(race)
     
     boats = series.process()
+    
     series.print_standings()
+    
+    results_file = file(series.name + ".res.csv", "w")
+    series.print_standings(results_file, ",")
+    results_file.close()
     
     f = file(args.boats_out_file, 'w')
     f.write(repr(series.boats))
