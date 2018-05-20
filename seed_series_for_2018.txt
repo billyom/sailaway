@@ -1,0 +1,163 @@
+Race Cooler 1
+Margaret H, 24.24
+Chris C, 24.34
+Des Mc, 25.55
+Eamonn B, 27.39
+Brian P, 26.43
+Jim O, 26.28
+Mike H, 26.36
+Iarlaith C, 29.15
+Brendan G, 33.30
+
+Race Cooler 2
+Margaret H, 
+Chris C, 30.40
+Mike H, 32.10
+Brian P, 33.19
+Eamonn B, 37.10
+Iarlaith C, 37.30
+Jim OS, 36.40 
+Brendan G, 49.20
+Des Mc,
+Hugh W,
+Tommy S,
+Tom Mc,
+
+Race Cooler 3
+Margaret H, 30.53
+Chris C, 31.02
+Mike H,
+Brian P, 33.57
+Eamonn B,
+Iarlaith C,
+Jim OS, 32.16
+Brendan G,
+Des Mc, 33.47
+Hugh W, 32.15
+Tommy S,
+Tom Mc, 33.05
+
+Race Cooler 4
+Margaret H, 
+Chris C, 30.20
+Mike H,
+Brian P, 34.04
+Eamonn B,
+Iarlaith C,
+Jim OS, 30.42
+Brendan G,
+Des Mc,
+Hugh W, 31.10
+Tommy S,
+Tom Mc, 33.12
+George F, 32.25
+
+Race Cooler 5
+Margaret H, 27.30
+Chris C, 27.15
+Mike H, 29.36
+Brian P,
+Eamonn B,
+Iarlaith C,
+Jim OS,
+Brendan G,
+Des Mc, 28.36
+Hugh W,
+Tommy S, 29.02
+Tom Mc, 28.48
+
+Race Cooler6
+Margaret H, 32.40
+Chris C, 32.38
+Mike H, 33.13
+Brian P,
+Eamonn B,
+Iarlaith C,
+Jim OS,
+Brendan G,
+Des Mc, 35.18
+Hugh W,
+Tommy S, 35.47
+Tom Mc, 35.20
+
+Race Spring 1
+Margaret H, 18.04
+Jim O'S, 18.25
+Sean H, 17.54
+Tommy S, 19.31
+Des Mc, 20.04
+George F, 21.54
+Billy O, rdg
+
+Race Spring 2
+Margaret H, 18.21
+Jim O'S, 18.46
+Sean H, 17.19
+Tommy S, 19.16
+Des Mc, 19.15
+George F, 21.11
+Billy O, rdg
+
+
+Race Spring3
+Margaret H, 31.44
+Jim O'S, 33.33
+Sean H, 29.13
+Des Mc, 31.45
+Billy O, 39.26
+
+Race Spring4
+Margaret H, 30.49
+Jim O'S, 32.32
+Sean H, 30.14
+Des Mc, 32.00
+Billy O, 35.38
+
+Race Spring5
+Margaret H, 30.04
+Jim O'S, 
+Sean H, 30.02
+Des Mc,
+George F,
+Billy O, 31.49
+
+Race Spring6
+Margaret H, 30.27
+Jim O'S, 31.24
+Sean H, 30.00
+Billy O, 32.35
+
+Race SRegatta1
+Mike H, 34.24
+Margaret H, 35.02
+Brian P, 36.05
+Iarlaith C, 39.04
+Tommy S, 38.38
+Billy O, 39.59
+Jim O, 40.52
+Des Mc, 
+Coranne H,
+
+
+Race SRegatta2
+Mike H, 27.52 
+Margaret H, 27.20
+Brian P, 
+Iarlaith C, 30.54
+Tommy S, 29.01
+Billy O, 31.25
+Jim O, 29.11
+Des Mc,
+Coranne H, 30.04
+
+Race SRegatta3
+Mike H, 31.22
+Margaret H, 31.42
+Brian P,
+Iarlaith C, 33.37
+Tommy S, 33.39
+Billy O, 32.55
+Jim O, 32.24
+Des Mc, 33.32
+Coranne H, 32.20
+
