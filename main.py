@@ -63,6 +63,12 @@ def normalize_hcaps (hcaps):
     sum_of_hcaps = sum (hcaps.values())
     average = float(sum_of_hcaps)/num_hcaps
     #print "Post-norm hcap:", average
+
+def secs_to_mmss (secs):
+    if not secs:
+        return "None"
+    secs = int(secs)
+    return "%d.%02d" % (secs/60, secs%60)
     
         
 class Series (object):
@@ -133,7 +139,7 @@ class Series (object):
             for race in self.races:
                 result = race.results.get(boat, None)
                 if result and result.finish == Result.FIN_RDG and avg_non_dnc_pts:
-                    result.points = avg_non_dnc_pts
+                    result.points = round(avg_non_dnc_pts, 1)
                     
         for race in self.races:
             race.print_()
@@ -206,7 +212,7 @@ class Result (object):
         
     def et_anntd(self):
         """Return string with ct in s followed by 'place on the water'"""
-        rtn = str(self.et_s)
+        rtn = str(secs_to_mmss(self.et_s))
         if self.et_place:
             rtn += " (%d)" % self.et_place
         return rtn
@@ -347,7 +353,7 @@ class Race (object):
         """
         #TODO prob can merge with __str__
         #print race results for everyone except non-competitors
-        tabulate_header = ["Helm", "Crew", "Elapsed (s)", "Hcap", "Corrected (s)", "Pts"]
+        tabulate_header = ["Helm", "Crew", "Elapsed Time", "Hcap", "Corrected Time", "Pts"]
         tabulate_rows = []
         results_list = self.results.values()
         results_list.sort(lambda lhs, rhs: cmp(lhs, rhs))
