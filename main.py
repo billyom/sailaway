@@ -178,8 +178,9 @@ class Result (object):
     FIN_DNS = "dns"
     FIN_DNC = "dnc"
     FIN_RDG = "rdg"
+    FIN_DSQ = "dsq"
 
-    FIN_ORDER = [FIN_NORM, FIN_DNF, FIN_DNS, FIN_RDG, FIN_DNC]
+    FIN_ORDER = [FIN_NORM, FIN_DNF, FIN_DNS, FIN_RDG, FIN_DSQ, FIN_DNC]
     
     def __init__(self, result_str=None, guest_crew=None):
         """
@@ -196,6 +197,7 @@ class Result (object):
         self.boat = None
         self.hcap = None
         
+        result_str = result_str.strip()
         result_str = result_str.lower()
         if result_str in Result.FIN_ORDER:
             self.finish = result_str
@@ -289,6 +291,8 @@ class Race (object):
                 result.points = len(norm_finish_results) + 1
             elif result.finish == Result.FIN_DNS:
                 result.points = len(norm_finish_results) + 1
+            elif result.finish == Result.FIN_DSQ:
+                result.points = len(norm_finish_results) + 2
                 
         #Assign DNC points
         boats_in_series = set(boats_to_hcaps.keys())
@@ -395,6 +399,9 @@ def main():
     
     # parse the series csv file. Creating races, adding results to races and adding Races to Series.
     for l in f:
+        l = l.strip()
+        if not l or l[0] == '#':
+            continue
         #New races are introduced with a line starting with 'Race...'
         if l.lower().find('race') == 0:
             if race:
@@ -412,7 +419,7 @@ def main():
             if guest_crew:
                 guest_crew = guest_crew.strip()
             race.add_result(boat, Result(mo.group('result'), guest_crew))
-        elif l.strip():
+        else:
             print "WARNING: In race '%s' can't parse result '%s'" % (race.name, l.strip())
     if race: 
         series.add_race(race)
