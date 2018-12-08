@@ -8,8 +8,13 @@ from tabulate import tabulate
 
 """
 TODO
-- When boat has only RDGs and DNCs the RDGs end up as None and count as 0 towards Series total. Should be given a DNS for the RDG races in this case.
-- 
+- When boat has only RDGs and DNCs the RDGs end up as None and count as 0 towards Series total. 
+  Should be given a DNS for the RDG races in this case.
+- When writing updated boats db if a db already exists then keep the crew name in the existing db.
+  This will allow the 'regular' crew to change from series to series without being overwritten if the
+  preceeding series is re-calculated.
+- Allow for a helm to change boat type from series to series. Or race two different boats (with two different scores) within a series.
+  Will need to include boat type in the identification of a boat, for starters.
 """
 
 class Boat (object):
@@ -24,7 +29,7 @@ class Boat (object):
         self.pre_norm_hcap = None    # the current hcap before fleet normalization applied
     
     def __repr__ (self):
-        return "\nBoat (\"%(class_)s\", %(sailno)s, \"%(helm)s\", \"%(crew)s\", %(hcap)s)" % self.__dict__
+        return "\nBoat (\"%(class_)s\", \"%(sailno)s\", \"%(helm)s\", \"%(crew)s\", %(hcap)s)" % self.__dict__
         
     def __str__ (self):
         return self.helm
@@ -69,6 +74,23 @@ def secs_to_mmss (secs):
         return "None"
     secs = int(secs)
     return "%d.%02d" % (secs/60, secs%60)
+
+def abbrev_name(name):
+    """
+    Given 'Billy O'Mahony' return 'Billy O'
+    """
+    forename = ""
+    surname_initial = ""
+    arr = name.split()
+    if len (arr) == 0:
+        pass
+    elif len(arr) == 2:
+        forename = arr[0]
+        surname_initial = arr[1][0]
+    else:
+        forename = arr[0]
+        
+    return forename + " " + surname_initial
     
         
 class Series (object):
@@ -180,6 +202,8 @@ class Result (object):
     FIN_RDG = "rdg"
     FIN_DSQ = "dsq"
 
+    # The order here is the primary order in which results are printed by Race.print_
+    # the secondary order is points. So all norm finishers first, then dnf, then dns etc.
     FIN_ORDER = [FIN_NORM, FIN_DNF, FIN_DNS, FIN_RDG, FIN_DSQ, FIN_DNC]
     
     def __init__(self, result_str=None, guest_crew=None):
@@ -213,7 +237,7 @@ class Result (object):
         return rtn
         
     def et_anntd(self):
-        """Return string with ct in s followed by 'place on the water'"""
+        """Return string with et in s followed by 'place on the water'"""
         rtn = str(secs_to_mmss(self.et_s))
         if self.et_place:
             rtn += " (%d)" % self.et_place
@@ -357,7 +381,7 @@ class Race (object):
         """
         #TODO prob can merge with __str__
         #print race results for everyone except non-competitors
-        tabulate_header = ["Helm", "Crew", "Elapsed Time", "Hcap", "Corrected Time", "Pts"]
+        tabulate_header = ["Helm", "Crew", "Elapsed", "Hcap", "Crrctd", "Pts"]
         tabulate_rows = []
         results_list = self.results.values()
         results_list.sort(lambda lhs, rhs: cmp(lhs, rhs))
@@ -367,7 +391,7 @@ class Race (object):
                 break
             #print result.boat, result
             race_crew = result.guest_crew if result.guest_crew else result.boat.crew
-            tabulate_row = [result.boat, race_crew, result.et_anntd(), result.hcap, result.ct_s, result.points_anntd()]
+            tabulate_row = [abbrev_name(result.boat.helm), abbrev_name(race_crew), result.et_anntd(), result.hcap, secs_to_mmss(result.ct_s), result.points_anntd()]
             tabulate_rows.append(tabulate_row)
         print tabulate(tabulate_rows, tabulate_header, tablefmt="grid")
     
